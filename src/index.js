@@ -1,3 +1,34 @@
+function initNav() {
+  function createObserver(targetSelector, callback) {
+    const targetNodes = $(targetSelector);
+    targetNodes.each(function () {
+      const observer = new MutationObserver((mutationsList) => {
+        mutationsList.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            callback(mutation.target);
+          }
+        });
+      });
+      observer.observe(this, { attributes: true, attributeFilter: ['class'] }); // Pass the DOM node directly
+    });
+  }
+
+  // Open Logic
+  let scrollPosition;
+  let menuOpen = false;
+  const disableScroll = () => {
+    if (!menuOpen) {
+      scrollPosition = $(window).scrollTop();
+      $('html, body').scrollTop(0).addClass('overflow-hidden');
+    } else {
+      $('html, body').scrollTop(scrollPosition).removeClass('overflow-hidden');
+    }
+    menuOpen = !menuOpen;
+  };
+
+  // Create observers for the elements with their respective callbacks
+  createObserver('.w-nav-button', disableScroll);
+}
 function runFSSort() {
   window.FinsweetAttributes ||= [];
   window.FinsweetAttributes.push([
@@ -5,13 +36,7 @@ function runFSSort() {
     (listInstances) => {
       listInstances.forEach((listInstance) => {
         listInstance.addHook('start', (items) => {
-          listInstance.sorting.value = {
-            fieldKey: 'order',
-            direction: 'asc',
-            interacted: true,
-          };
-
-          return items;
+          $('[fs-list-element="sort-trigger"]')[0].click();
         });
 
         // Trigger the lifecycle to start
@@ -19,6 +44,20 @@ function runFSSort() {
       });
     },
   ]);
+}
+function initTags() {
+  $('[data-partner-slug]').each(function () {
+    let partnerSlug = $(this).attr('data-partner-slug');
+    let useCases = $(this).find('[data-use-cases]');
+    let buildingBlocks = $(this).find('[data-building-blocks]');
+    let vehicleTypes = $(this).find('[data-vehicle-types]');
+
+    if (partnerSlug !== '') {
+      useCases.load(`/partner/${partnerSlug} #use-cases-list`);
+      buildingBlocks.load(`/partner/${partnerSlug} #building-blocks-list`);
+      vehicleTypes.load(`/partner/${partnerSlug} #vehicle-types-list`);
+    }
+  });
 }
 function animateLogos() {
   const totalItems = $('.logo_menu-item').length;
@@ -53,156 +92,367 @@ function animateLogos() {
   animateNext(0);
 }
 function animateTabs() {
-  // Define constants
-  const activeClass = 'is-active';
-  const animDuration = 0.2;
+  // Configuration
+  var config = {
+    activeClass: 'is-active',
+    animDuration: 0.2,
+    mobileBreakpoint: 991,
+  };
 
-  // Find all tab containers
-  $('[data-tab-container]').each(function () {
-    const $container = $(this);
-    const $tabItems = $container.find('[data-tab-item]');
-    let $tabVisuals = $container.find('[data-tab-visual]');
+  var tabContainers = [];
 
-    // Track animation state
-    let isAnimating = false;
-    let pendingTab = null;
+  // Tab Container Class
+  function TabContainer($container) {
+    this.$el = $container;
+    this.$tabItems = $container.find('[data-tab-item]');
+    this.$tabVisuals = $container.find('[data-tab-visual]');
+    this.isAnimating = false;
+    this.pendingTab = null;
+    this.isMobile = window.innerWidth <= config.mobileBreakpoint;
 
-    // Skip if no tabs found
-    if ($tabItems.length === 0) return;
+    // Initialize if we have tab items
+    if (this.$tabItems.length > 0) {
+      this.init();
+    }
+  }
 
-    // Preselect default
-    let $activeTab = $tabItems.first();
-    $activeTab.addClass(activeClass);
+  // Initialize the tab container
+  TabContainer.prototype.init = function () {
+    var self = this;
 
-    // Get the active tab value and show corresponding visual
-    const activeValue = $activeTab.attr('data-tab-item');
+    // Find active tab or use first tab
+    var $activeTab =
+      this.$tabItems.filter('.' + config.activeClass).length > 0
+        ? this.$tabItems.filter('.' + config.activeClass)
+        : this.$tabItems.first();
 
-    // Make sure visuals are properly initialized
-    if ($tabVisuals.length > 0) {
-      // Hide all visuals first
-      $tabVisuals.hide().css('opacity', 0);
+    $activeTab.addClass(config.activeClass);
 
-      // Then show and fade in the active one
-      const $activeVisual = $tabVisuals.filter(`[data-tab-visual="${activeValue}"]`);
-      $activeVisual.show().css('opacity', 1);
+    // Initialize visuals
+    if (this.$tabVisuals.length > 0) {
+      var activeValue = $activeTab.attr('data-tab-item');
+      this.$tabVisuals.hide().css('opacity', 0);
+      this.$tabVisuals
+        .filter('[data-tab-visual="' + activeValue + '"]')
+        .show()
+        .css('opacity', 1);
     }
 
-    // For all non-active tabs, set content heights to 0
-    $tabItems
-      .not('.' + activeClass)
+    // Set initial heights
+    this.setTabHeights($activeTab);
+
+    // Bind event handlers
+    this.bindEvents();
+  };
+
+  // Set tab content heights
+  TabContainer.prototype.setTabHeights = function ($activeTab) {
+    // Set all tabs to height 0
+    this.$tabItems
+      .not('.' + config.activeClass)
       .find('[data-tab-content]')
       .css('height', '0');
 
-    // Make sure active tab contents are visible
+    // Set active tab to auto height
     $activeTab.find('[data-tab-content]').css('height', 'auto');
+  };
 
-    // Handle tab hover
-    $tabItems.on('mouseenter', function () {
-      const $hoveredTab = $(this);
+  // Bind event handlers based on screen size
+  TabContainer.prototype.bindEvents = function () {
+    var self = this;
 
-      // Skip if already active
-      if ($hoveredTab.hasClass(activeClass)) return;
+    // Remove existing event handlers
+    this.$tabItems.off('mouseenter click');
 
-      // If animation in progress, store as pending and return
-      if (isAnimating) {
-        pendingTab = $hoveredTab;
-        return;
-      }
+    if (this.isMobile) {
+      // Mobile event handling (click only)
+      this.$tabItems.on('click', function (e) {
+        var $clickedTab = $(this);
+        var $tabLink = $clickedTab.find('a');
 
-      // Start animation
-      isAnimating = true;
-      changeTab($hoveredTab);
-    });
+        if ($clickedTab.hasClass(config.activeClass) && $tabLink.length > 0) {
+          return true; // Allow link click if tab already active
+        }
 
-    // Function to change tab with animation
-    function changeTab($newTab) {
-      const hoveredValue = $newTab.attr('data-tab-item');
-      const $targetVisual = $tabVisuals.filter(`[data-tab-visual="${hoveredValue}"]`);
+        e.preventDefault();
 
-      // Get current active elements
-      const $currentActiveTab = $tabItems.filter('.' + activeClass);
-      const $currentVisual = $tabVisuals.filter(':visible');
+        if (self.isAnimating) {
+          self.pendingTab = $clickedTab;
+          return;
+        }
 
-      // Update active state
-      $tabItems.removeClass(activeClass);
-      $newTab.addClass(activeClass);
+        self.isAnimating = true;
+        self.changeTab($clickedTab);
+      });
+    } else {
+      // Desktop event handling (hover + click)
+      this.$tabItems.on('mouseenter', function () {
+        var $hoveredTab = $(this);
 
-      // Kill any running animations
-      gsap.killTweensOf($currentActiveTab.find('[data-tab-content]'));
-      gsap.killTweensOf($newTab.find('[data-tab-content]'));
-      gsap.killTweensOf($currentVisual);
-      gsap.killTweensOf($targetVisual);
+        if ($hoveredTab.hasClass(config.activeClass)) return;
 
-      // Get all content elements in current and new tabs
-      const $currentContents = $currentActiveTab.find('[data-tab-content]');
-      const $newContents = $newTab.find('[data-tab-content]');
+        if (self.isAnimating) {
+          self.pendingTab = $hoveredTab;
+          return;
+        }
 
-      // Collapse current contents
-      if ($currentContents.length) {
-        gsap.to($currentContents, {
-          height: 0,
-          duration: animDuration,
-          stagger: 0.05,
-        });
-      }
+        self.isAnimating = true;
+        self.changeTab($hoveredTab);
+      });
 
-      // Expand new contents
-      if ($newContents.length) {
-        $newContents.each(function (index) {
-          const $content = $(this);
+      this.$tabItems.on('click', function (e) {
+        var $clickedTab = $(this);
+        var $tabLink = $clickedTab.find('a');
 
-          // Measure auto height
-          $content.css('height', 'auto');
-          const autoHeight = $content.outerHeight();
-          $content.css('height', '0');
-
-          // Animate to auto height
-          gsap.to($content, {
-            height: autoHeight,
-            duration: 0.3,
-          });
-        });
-      }
-
-      // Animate visuals
-      gsap.to($currentVisual, {
-        opacity: 0,
-        duration: animDuration,
-        onComplete: function () {
-          $currentVisual.hide();
-          $targetVisual.show();
-
-          gsap.fromTo(
-            $targetVisual,
-            { opacity: 0 },
-            {
-              opacity: 1,
-              duration: animDuration,
-              onComplete: function () {
-                // Animation completed
-                isAnimating = false;
-
-                // Check if another tab is waiting
-                if (pendingTab) {
-                  const $nextTab = pendingTab;
-                  pendingTab = null;
-
-                  // Process the next tab after a small delay
-                  setTimeout(function () {
-                    changeTab($nextTab);
-                  }, 50);
-                }
-              },
-            }
-          );
-        },
+        if (!$clickedTab.hasClass(config.activeClass) || $tabLink.length === 0) {
+          e.preventDefault();
+        }
       });
     }
+  };
+
+  // Scroll to tab (mobile only)
+  TabContainer.prototype.scrollToTab = function ($tab) {
+    var navHeight = $('.w-nav').outerHeight() || 0;
+    var tabTop = $tab.offset().top;
+    var scrollPosition = tabTop - navHeight;
+
+    $('html, body').animate(
+      {
+        scrollTop: scrollPosition,
+      },
+      400
+    );
+  };
+
+  // Change active tab
+  TabContainer.prototype.changeTab = function ($newTab) {
+    var self = this;
+    var hoveredValue = $newTab.attr('data-tab-item');
+    var $targetVisual = this.$tabVisuals.filter('[data-tab-visual="' + hoveredValue + '"]');
+
+    var $currentActiveTab = this.$tabItems.filter('.' + config.activeClass);
+    var $currentVisual = this.$tabVisuals.filter(':visible');
+
+    // Update active class
+    this.$tabItems.removeClass(config.activeClass);
+    $newTab.addClass(config.activeClass);
+
+    // Kill any existing tweens
+    gsap.killTweensOf($currentActiveTab.find('[data-tab-content]'));
+    gsap.killTweensOf($newTab.find('[data-tab-content]'));
+    gsap.killTweensOf($currentVisual);
+    gsap.killTweensOf($targetVisual);
+
+    // Animate content heights
+    var $currentContents = $currentActiveTab.find('[data-tab-content]');
+    var $newContents = $newTab.find('[data-tab-content]');
+
+    // Collapse current content
+    if ($currentContents.length) {
+      gsap.to($currentContents, {
+        height: 0,
+        duration: config.animDuration,
+        stagger: 0.05,
+      });
+    }
+
+    // Expand new content
+    if ($newContents.length) {
+      $newContents.each(function () {
+        var $content = $(this);
+
+        $content.css('height', 'auto');
+        var autoHeight = $content.outerHeight();
+        $content.css('height', '0');
+
+        gsap.to($content, {
+          height: autoHeight,
+          duration: 0.3,
+        });
+      });
+    }
+
+    // Animate visuals
+    gsap.to($currentVisual, {
+      opacity: 0,
+      duration: config.animDuration,
+      onComplete: function () {
+        $currentVisual.hide();
+        $targetVisual.show();
+
+        gsap.fromTo(
+          $targetVisual,
+          { opacity: 0 },
+          {
+            opacity: 1,
+            duration: config.animDuration,
+            onComplete: function () {
+              self.isAnimating = false;
+
+              // Scroll to tab on mobile
+              if (self.isMobile) {
+                setTimeout(function () {
+                  self.scrollToTab($newTab);
+                }, 50);
+              }
+
+              // Handle pending tab change if any
+              if (self.pendingTab) {
+                var $nextTab = self.pendingTab;
+                self.pendingTab = null;
+
+                setTimeout(function () {
+                  self.changeTab($nextTab);
+                }, 50);
+              }
+            },
+          }
+        );
+      },
+    });
+  };
+
+  // Update container with new elements
+  TabContainer.prototype.refresh = function () {
+    var oldTabItemsLength = this.$tabItems.length;
+    var oldTabVisualsLength = this.$tabVisuals.length;
+
+    // Update references
+    this.$tabItems = this.$el.find('[data-tab-item]');
+    this.$tabVisuals = this.$el.find('[data-tab-visual]');
+
+    var hasNewItems = this.$tabItems.length > oldTabItemsLength;
+    var hasNewVisuals = this.$tabVisuals.length > oldTabVisualsLength;
+
+    // Check if we need to reinitialize
+    if (hasNewItems || hasNewVisuals) {
+      var $activeTab = this.$tabItems.filter('.' + config.activeClass);
+
+      // Set active tab if none exists
+      if ($activeTab.length === 0 && this.$tabItems.length > 0) {
+        $activeTab = this.$tabItems.first();
+        $activeTab.addClass(config.activeClass);
+
+        if (this.$tabVisuals.length > 0) {
+          var activeValue = $activeTab.attr('data-tab-item');
+          this.$tabVisuals.hide().css('opacity', 0);
+          this.$tabVisuals
+            .filter('[data-tab-visual="' + activeValue + '"]')
+            .show()
+            .css('opacity', 1);
+        }
+      }
+
+      // Update heights and event handlers
+      this.setTabHeights($activeTab);
+      this.bindEvents();
+    }
+
+    // Update mobile state if needed
+    var newIsMobile = window.innerWidth <= config.mobileBreakpoint;
+    if (this.isMobile !== newIsMobile) {
+      this.isMobile = newIsMobile;
+      this.bindEvents();
+    }
+  };
+
+  // Initialize all containers
+  function initAllContainers() {
+    $('[data-tab-container]').each(function () {
+      var $container = $(this);
+
+      // Check if already initialized
+      var existingContainer = findContainer($container[0]);
+
+      if (!existingContainer) {
+        var tabContainer = new TabContainer($container);
+        if (tabContainer.$tabItems.length > 0) {
+          tabContainers.push(tabContainer);
+        }
+      }
+    });
+  }
+
+  // Find a container by element
+  function findContainer(element) {
+    for (var i = 0; i < tabContainers.length; i++) {
+      if (tabContainers[i].$el[0] === element) {
+        return tabContainers[i];
+      }
+    }
+    return null;
+  }
+
+  // Global refresh function
+  window.refreshTabs = function () {
+    // Check for new containers
+    initAllContainers();
+
+    // Refresh existing containers
+    for (var i = 0; i < tabContainers.length; i++) {
+      tabContainers[i].refresh();
+    }
+  };
+
+  // Initialize all containers
+  initAllContainers();
+
+  // Window resize handler
+  $(window).on('resize', function () {
+    for (var i = 0; i < tabContainers.length; i++) {
+      tabContainers[i].refresh();
+    }
   });
+
+  // Set up observer for dynamic content
+  if (typeof MutationObserver !== 'undefined') {
+    var observer = new MutationObserver(function (mutations) {
+      var shouldRefresh = false;
+
+      for (var i = 0; i < mutations.length; i++) {
+        var mutation = mutations[i];
+        if (mutation.type === 'childList') {
+          for (var j = 0; j < mutation.addedNodes.length; j++) {
+            var node = mutation.addedNodes[j];
+            if (node.nodeType === 1) {
+              // Element node
+              if (
+                $(node).find('[data-tab-item]').length > 0 ||
+                $(node).find('[data-tab-visual]').length > 0 ||
+                $(node).find('[data-tab-container]').length > 0 ||
+                $(node).is('[data-tab-item]') ||
+                $(node).is('[data-tab-visual]') ||
+                $(node).is('[data-tab-container]')
+              ) {
+                shouldRefresh = true;
+                break;
+              }
+            }
+          }
+          if (shouldRefresh) break;
+        }
+      }
+
+      if (shouldRefresh) {
+        setTimeout(window.refreshTabs, 10);
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  } else {
+    // Fallback for older browsers
+    setInterval(window.refreshTabs, 2000);
+  }
 }
 
 $(document).ready(function () {
+  initNav();
   runFSSort();
+  initTags();
   animateLogos();
   animateTabs();
 });
