@@ -16,12 +16,15 @@ function initNav() {
   // Open Logic
   let scrollPosition;
   let menuOpen = false;
+  let navBg = $('.nav_wrap-bg');
   const disableScroll = () => {
     if (!menuOpen) {
       scrollPosition = $(window).scrollTop();
       $('html, body').scrollTop(0).addClass('overflow-hidden');
+      navBg.show();
     } else {
       $('html, body').scrollTop(scrollPosition).removeClass('overflow-hidden');
+      navBg.hide();
     }
     menuOpen = !menuOpen;
   };
@@ -38,7 +41,7 @@ function runFSSort() {
         listInstance.addHook('start', (items) => {
           let trigger = $('[fs-list-element="sort-trigger"]');
           if (trigger.length) {
-            trigger.click();
+            trigger[0].click();
           }
         });
 
