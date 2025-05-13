@@ -36,7 +36,10 @@ function runFSSort() {
     (listInstances) => {
       listInstances.forEach((listInstance) => {
         listInstance.addHook('start', (items) => {
-          $('[fs-list-element="sort-trigger"]')[0].click();
+          let trigger = $('[fs-list-element="sort-trigger"]');
+          if (trigger.length) {
+            trigger.click();
+          }
         });
 
         // Trigger the lifecycle to start
@@ -60,36 +63,40 @@ function initTags() {
   });
 }
 function animateLogos() {
-  const totalItems = $('.logo_menu-item').length;
-  let currentIndex = 0;
-  let timer;
+  $('.logos_wrap').each(function () {
+    let items = $(this).find('.logo_menu-item');
+    let lists = $(this).find('.logos_list');
+    const totalItems = items.length;
+    let currentIndex = 0;
+    let timer;
 
-  function animateNext(nextIndex) {
-    clearTimeout(timer);
+    function animateNext(nextIndex) {
+      clearTimeout(timer);
 
-    if (nextIndex === undefined) {
-      nextIndex = (currentIndex + 1) % totalItems;
+      if (nextIndex === undefined) {
+        nextIndex = (currentIndex + 1) % totalItems;
+      }
+
+      items.removeClass('is-active');
+      lists.removeClass('active');
+
+      items.eq(nextIndex).addClass('is-active');
+      lists.eq(nextIndex).addClass('active');
+
+      currentIndex = nextIndex;
+
+      timer = setTimeout(function () {
+        animateNext();
+      }, 4000);
     }
 
-    $('.logo_menu-item').removeClass('is-active');
-    $('.logos_list').removeClass('active');
+    items.on('click', function () {
+      const clickedIndex = $(this).index(items);
+      animateNext(clickedIndex);
+    });
 
-    $('.logo_menu-item').eq(nextIndex).addClass('is-active');
-    $('.logos_list').eq(nextIndex).addClass('active');
-
-    currentIndex = nextIndex;
-
-    timer = setTimeout(function () {
-      animateNext();
-    }, 4000);
-  }
-
-  $('.logo_menu-item').on('click', function () {
-    const clickedIndex = $(this).index('.logo_menu-item');
-    animateNext(clickedIndex);
+    animateNext(0);
   });
-
-  animateNext(0);
 }
 function animateTabs() {
   // Configuration
@@ -500,10 +507,7 @@ function initModal() {
     }
   }
 
-  // Initialize Basic Modal
-  document.addEventListener('DOMContentLoaded', () => {
-    initModalBasic();
-  });
+  initModalBasic();
 }
 
 $(document).ready(function () {
@@ -512,4 +516,5 @@ $(document).ready(function () {
   initTags();
   animateLogos();
   animateTabs();
+  initModal();
 });

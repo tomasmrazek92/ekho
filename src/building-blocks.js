@@ -22,15 +22,24 @@ function runFs() {
 
           // Filter and hide non-matching items
           const filteredItems = items.filter((item) => {
-            const blockField = item.fields?.['building-block'];
-            if (!blockField) {
+            // Check if there are any building-block fields in this item
+            const blockFields = item.element?.querySelectorAll('[fs-list-field="building-block"]');
+
+            if (!blockFields || blockFields.length === 0) {
               item.element && (item.element.style.display = 'none');
               return false;
             }
 
-            const blockValue = String(blockField.value);
-            const isMatch = blockValue.includes(currentPath) || currentPath.includes(blockValue);
+            // Check all building-block fields for a match
+            let isMatch = false;
+            blockFields.forEach((field) => {
+              const blockValue = field.textContent.trim();
+              if (blockValue.includes(currentPath) || currentPath.includes(blockValue)) {
+                isMatch = true;
+              }
+            });
 
+            // Hide non-matching items
             if (!isMatch && item.element) {
               item.element.style.display = 'none';
             }
@@ -40,15 +49,21 @@ function runFs() {
 
           // Direct DOM filtering for any items that might have been missed
           listInstance.listElement.querySelectorAll('.w-dyn-item').forEach((element) => {
-            const blockField = element.querySelector('[fs-list-field="building-block"]');
-            if (!blockField) {
+            const blockFields = element.querySelectorAll('[fs-list-field="building-block"]');
+            if (!blockFields || blockFields.length === 0) {
               element.style.display = 'none';
               return;
             }
 
-            const fieldValue = blockField.textContent.trim();
-            element.style.display =
-              fieldValue.includes(currentPath) || currentPath.includes(fieldValue) ? '' : 'none';
+            let hasMatch = false;
+            blockFields.forEach((field) => {
+              const fieldValue = field.textContent.trim();
+              if (fieldValue.includes(currentPath) || currentPath.includes(fieldValue)) {
+                hasMatch = true;
+              }
+            });
+
+            element.style.display = hasMatch ? '' : 'none';
           });
 
           // Update list items if changed
@@ -71,5 +86,10 @@ function runFs() {
     },
   ]);
 }
+
+// Initialize the function
+$(document).ready(function () {
+  runFs();
+});
 
 $(document).ready(runFs);
