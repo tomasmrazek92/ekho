@@ -55,12 +55,12 @@ function initTags() {
   $('[data-partner-slug]').each(function () {
     let partnerSlug = $(this).attr('data-partner-slug');
     let useCases = $(this).find('[data-use-cases]');
-    let buildingBlocks = $(this).find('[data-building-blocks]');
+    // let buildingBlocks = $(this).find('[data-building-blocks]');
     let vehicleTypes = $(this).find('[data-vehicle-types]');
 
     if (partnerSlug !== '') {
       useCases.load(`/partner/${partnerSlug} #use-cases-list`);
-      buildingBlocks.load(`/partner/${partnerSlug} #building-blocks-list`);
+      // buildingBlocks.load(`/partner/${partnerSlug} #building-blocks-list`);
       vehicleTypes.load(`/partner/${partnerSlug} #vehicle-types-list`);
     }
   });
@@ -68,6 +68,7 @@ function initTags() {
 function animateLogos() {
   $('.logos_wrap').each(function () {
     let items = $(this).find('.logo_menu-item');
+    console.log(items);
     let lists = $(this).find('.logos_list');
     const totalItems = items.length;
     let currentIndex = 0;
@@ -94,7 +95,8 @@ function animateLogos() {
     }
 
     items.on('click', function () {
-      const clickedIndex = $(this).index(items);
+      const clickedIndex = items.index($(this));
+      console.log(clickedIndex);
       animateNext(clickedIndex);
     });
 
