@@ -153,6 +153,7 @@ export const runSwipers = (swiperInstances) => {
 };
 
 export const initSwipers = (swiperInstances, swipersState) => {
+  console.log('hello');
   // Load
   runSwipers(swiperInstances);
 

@@ -1,3 +1,5 @@
+import { initSwipers } from './utils/swipers';
+
 function initNav() {
   function createObserver(targetSelector, callback) {
     const targetNodes = $(targetSelector);
@@ -514,6 +516,66 @@ function initModal() {
 
   initModalBasic();
 }
+function initAllSwipers() {
+  let swiperInstances = [
+    [
+      '.section_testimonials-slider',
+      '.testimonials-slider_slider',
+      'testimonials',
+      { slidesPerView: 'auto', spaceBetween: 24 },
+      'all',
+    ],
+  ];
+  initSwipers(swiperInstances);
+}
+function initQuoteGrid() {
+  $(document).ready(function () {
+    window.FinsweetAttributes ||= [];
+    window.FinsweetAttributes.push([
+      'list',
+      (listInstances) => {
+        let macyInstance;
+        let masonry = document.querySelector('#masonry');
+        if (masonry) {
+          const initMasonryLayout = () => {
+            $('.testimonials-grid').css('opacity', '0');
+
+            const options = {
+              container: '#masonry',
+              margin: 24,
+              columns: 3,
+              breakAt: {
+                991: {
+                  columns: 2,
+                },
+                767: {
+                  columns: 1,
+                },
+              },
+            };
+            if (macyInstance) macyInstance.remove();
+            setTimeout(() => {
+              macyInstance = Macy(options);
+              $('.testimonials-grid').css('opacity', '1');
+            }, 100);
+            return macyInstance;
+          };
+          const observer = new MutationObserver(() => {
+            initMasonryLayout();
+          });
+          observer.observe(document.querySelector('#masonry'), {
+            childList: true,
+            subtree: true,
+          });
+          initMasonryLayout();
+        }
+        $('[fs-list-element="filters"]').each(function () {
+          $(this).find('.testimonials-grid_tabs')[0].click();
+        });
+      },
+    ]);
+  });
+}
 
 $(document).ready(function () {
   initNav();
@@ -522,4 +584,6 @@ $(document).ready(function () {
   animateLogos();
   animateTabs();
   initModal();
+  initAllSwipers();
+  initQuoteGrid();
 });
