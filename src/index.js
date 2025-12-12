@@ -1,4 +1,5 @@
 import { initSwipers } from './utils/swipers';
+import { handleUTMParams } from './utils/utms';
 
 function initNav() {
   function createObserver(targetSelector, callback) {
@@ -578,6 +579,7 @@ function initQuoteGrid() {
 }
 
 $(document).ready(function () {
+  handleUTMParams();
   initNav();
   runFSSort();
   initTags();
