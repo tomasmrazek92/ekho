@@ -60,11 +60,20 @@ function initTags() {
     let useCases = $(this).find('[data-use-cases]');
     // let buildingBlocks = $(this).find('[data-building-blocks]');
     let vehicleTypes = $(this).find('[data-vehicle-types]');
+    let brands = $(this).find('[data-brands]');
 
     if (partnerSlug !== '') {
-      useCases.load(`/partner/${partnerSlug} #use-cases-list`);
-      // buildingBlocks.load(`/partner/${partnerSlug} #building-blocks-list`);
-      vehicleTypes.load(`/partner/${partnerSlug} #vehicle-types-list`);
+      useCases.load(`/partner/${partnerSlug} #use-cases-list`, function (response, status, xhr) {
+        if ($(this).find('.w-dyn-item').length === 0) useCases.hide();
+      });
+
+      vehicleTypes.load(`/partner/${partnerSlug} #vehicle-types-list`, function () {
+        if ($(this).find('.w-dyn-item').length === 0) vehicleTypes.hide();
+      });
+
+      brands.load(`/partner/${partnerSlug} #brands-list`, function () {
+        if ($(this).find('.w-dyn-item').length === 0) brands.hide();
+      });
     }
   });
 }
