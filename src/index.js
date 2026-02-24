@@ -71,8 +71,57 @@ function initTags() {
         if ($(this).find('.w-dyn-item').length === 0) vehicleTypes.hide();
       });
 
+      function fitBrands(container) {
+        const items = container.find('.w-dyn-item');
+        if (items.length === 0) return;
+
+        items.show();
+        container.find('.brands-more').remove();
+
+        const parentWidth = container.closest('.grid_collection-category_list').width();
+        const moreIndicatorWidth = 48;
+        let usedWidth = 0;
+        let visibleCount = 0;
+
+        items.each(function () {
+          const itemWidth = $(this).outerWidth(true);
+          const remaining = items.length - visibleCount - 1;
+          const widthNeeded = usedWidth + itemWidth + (remaining > 0 ? moreIndicatorWidth : 0);
+
+          if (widthNeeded <= parentWidth) {
+            usedWidth += itemWidth;
+            visibleCount++;
+          } else {
+            return false;
+          }
+        });
+
+        items.filter(`:gt(${visibleCount - 1})`).hide();
+
+        const hidden = items.length - visibleCount;
+        if (hidden > 0) {
+          container
+            .find('.w-dyn-items')
+            .append(`<div class="p12 brands-more" style="display:inline">+${hidden}</div>`);
+        }
+      }
+
       brands.load(`/partner/${partnerSlug} #brands-list`, function () {
-        if ($(this).find('.w-dyn-item').length === 0) brands.hide();
+        const container = $(this);
+        if (container.find('.w-dyn-item').length === 0) {
+          brands.hide();
+          return;
+        }
+
+        fitBrands(container);
+
+        let resizeTimer;
+        const parent = container.closest('.grid_collection-category_list')[0];
+
+        new ResizeObserver(() => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => fitBrands(container), 150);
+        }).observe(parent);
       });
     }
   });
