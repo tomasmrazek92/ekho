@@ -584,6 +584,70 @@ function initAllSwipers() {
       { slidesPerView: 'auto', spaceBetween: 24 },
       'all',
     ],
+    [
+      '.features-slider',
+      '.exp-tabs_tabs',
+      'exp-tabs-menu',
+      {
+        slidesPerView: 1,
+        spaceBetween: 20,
+        slideToClickedSlide: true,
+        autoplay: {
+          delay: 7000,
+        },
+        on: {
+          autoplayStart: function () {
+            $('.swiper-slide-active .exp-tabs_tabs-progress-line').removeClass('stopped');
+          },
+          autoplayStop: function () {
+            $('.swiper-slide-active .exp-tabs_tabs-progress-line').addClass('stopped');
+          },
+          slideChange: function (swiper) {
+            const firstSwiperKey = Object.keys(swipers['exp-tabs-content'])[0];
+            const firstSwiper = swipers['exp-tabs-content'][firstSwiperKey].swiperInstance;
+            firstSwiper.slideTo(swiper.realIndex);
+          },
+        },
+        breakpoints: {
+          0: {
+            spaceBetween: 16,
+          },
+          992: {
+            spaceBetween: 20,
+          },
+        },
+      },
+      'all',
+    ],
+    [
+      '.exp-tabs_slider-box',
+      '.exp-tabs_slider',
+      'exp-tabs-content',
+      {
+        spaceBetween: 0,
+        loop: true,
+        on: {
+          slideChange: function (swiper) {
+            if (window.innerWidth < 992) {
+              const firstSwiperKey = Object.keys(swipers['exp-tabs-menu'])[0];
+              const firstSwiper = swipers['exp-tabs-menu'][firstSwiperKey].swiperInstance[1];
+              firstSwiper.slideTo(swiper.realIndex);
+            }
+          },
+        },
+        breakpoints: {
+          0: {
+            spaceBetween: 10,
+            allowTouchMove: true,
+          },
+          992: {
+            spaceBetween: 0,
+            allowTouchMove: false,
+          },
+        },
+      },
+      'all',
+    ],
   ];
   initSwipers(swiperInstances);
 }
