@@ -611,9 +611,11 @@ function initAllSwipers() {
         breakpoints: {
           0: {
             spaceBetween: 16,
+            threshold: 0,
           },
           992: {
             spaceBetween: 20,
+            threshold: 100,
           },
         },
       },
@@ -625,7 +627,6 @@ function initAllSwipers() {
       'exp-tabs-content',
       {
         spaceBetween: 0,
-        loop: true,
         on: {
           slideChange: function (swiper) {
             if (window.innerWidth < 992) {
