@@ -640,10 +640,12 @@ function initAllSwipers() {
           0: {
             spaceBetween: 10,
             allowTouchMove: true,
+            autoHeight: true,
           },
           992: {
             spaceBetween: 0,
             allowTouchMove: false,
+            autoHeight: false,
           },
         },
       },
